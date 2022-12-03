@@ -12,8 +12,8 @@ fn read_input_lines() -> std::io::Result<Vec<String>> {
 
 fn get_priority(a: &char) -> u32 {
     match *a as u32 {
-        a if a <= 90 => a - 64 + 26,
-        a if a >= 97 => a - 96,
+        a if a <= ('Z' as u32) => a - ('A' as u32) + 27,
+        a if a >= ('a' as u32) => a - ('a' as u32) + 1,
         _ => unreachable!(),
     }
 }
@@ -32,14 +32,13 @@ fn part1(input: &[String]) -> u32 {
         })
         .map(|(left, right)| {
             let left_chars: Vec<char> = left.chars().collect();
-            let right_chars: Vec<char> = right.chars().collect();
 
             let mut priority = 0;
             for i in 0..left.len() {
                 let l = left_chars.get(i).unwrap();
 
-                if let Some(p) = right_chars.iter().position(|&c| c == *l) {
-                    priority = get_priority(right_chars.get(p).unwrap())
+                if let Some(_) = right.chars().position(|c| c == *l) {
+                    priority = get_priority(l)
                 };
             }
 
@@ -49,31 +48,22 @@ fn part1(input: &[String]) -> u32 {
 }
 
 fn part2(input: &[String]) -> u32 {
-    let mut i = 0;
     let mut total = 0;
 
-    loop {
-        if i >= input.len() {
-            break;
-        }
-
+    for i in (0..input.len()).step_by(3) {
         let first: Vec<char> = input.get(i).unwrap().chars().collect();
-        let second: Vec<char> = input.get(i + 1).unwrap().chars().collect();
-        let third: Vec<char> = input.get(i + 2).unwrap().chars().collect();
 
-        for i in 0..first.len() {
-            let l = first.get(i).unwrap();
+        for j in 0..first.len() {
+            let l = first.get(j).unwrap();
 
-            if let (Some(p), Some(_)) = (
-                second.iter().position(|&c| c == *l),
-                third.iter().position(|&c| c == *l),
+            if let (Some(_), Some(_)) = (
+                input.get(i + 1).unwrap().chars().position(|c| c == *l),
+                input.get(i + 2).unwrap().chars().position(|c| c == *l),
             ) {
-                total += get_priority(second.get(p).unwrap());
+                total += get_priority(l);
                 break;
             };
         }
-
-        i += 3;
     }
 
     total
