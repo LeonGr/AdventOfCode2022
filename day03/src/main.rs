@@ -22,15 +22,7 @@ fn part1(input: &[String]) -> u32 {
     input
         .iter()
         .map(|line| {
-            let half = line.len() / 2;
-            let chars = line.chars();
-
-            let first_half: String = chars.clone().take(half).collect();
-            let second_half: String = chars.skip(half).take(half).collect();
-
-            (first_half, second_half)
-        })
-        .map(|(left, right)| {
+            let (left, right) = line.split_at(line.len() / 2);
             let left_chars: Vec<char> = left.chars().collect();
 
             let mut priority = 0;
