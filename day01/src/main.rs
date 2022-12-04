@@ -11,20 +11,10 @@ fn read_input_lines() -> std::io::Result<Vec<String>> {
 }
 
 fn parse(input: &[String]) -> Vec<Vec<u32>> {
-    let mut output = vec![];
-    let mut buffer = vec![];
-
-    for line in input {
-        match line.as_str() {
-            "" => {
-                output.push(buffer.clone());
-                buffer.clear();
-            }
-            calories => buffer.push(calories.parse().unwrap()),
-        }
-    }
-
-    output
+    input
+        .split(|line| line.is_empty())
+        .map(|elf| elf.iter().map(|calories| calories.parse().unwrap()).collect())
+        .collect()
 }
 
 fn part1(input: &[Vec<u32>]) -> u32 {
