@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::{io::BufRead, str::FromStr};
 
 fn read_input_lines() -> std::io::Result<Vec<String>> {
     let input_file = std::fs::File::open("input")?;
@@ -17,16 +17,20 @@ enum Shape {
     Scissors,
 }
 
-type Match = (Shape, Shape);
+impl FromStr for Shape {
+    type Err = String;
 
-fn parse_shape(letter: &str) -> Shape {
-    match letter {
-        "A" | "X" => Shape::Rock,
-        "B" | "Y" => Shape::Paper,
-        "C" | "Z" => Shape::Scissors,
-        _ => unreachable!(),
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" | "X" => Ok(Shape::Rock),
+            "B" | "Y" => Ok(Shape::Paper),
+            "C" | "Z" => Ok(Shape::Scissors),
+            _ => Err(String::from("Unexpected shape letter")),
+        }
     }
 }
+
+type Match = (Shape, Shape);
 
 fn parse(input: &[String]) -> Vec<(Shape, String)> {
     input
@@ -34,7 +38,7 @@ fn parse(input: &[String]) -> Vec<(Shape, String)> {
         .map(|line| {
             let parts: Vec<&str> = line.split(' ').collect();
 
-            (parse_shape(parts[0]), parts[1].to_owned())
+            (parts[0].parse().unwrap(), parts[1].to_owned())
         })
         .collect()
 }
@@ -70,7 +74,7 @@ fn score(game: &Match) -> u8 {
 fn part1(input: &[(Shape, String)]) -> u32 {
     input
         .iter()
-        .map(|(opponent_shape, me)| score(&(*opponent_shape, parse_shape(me.as_str()))) as u32)
+        .map(|(opponent_shape, me)| score(&(*opponent_shape, me.parse().unwrap())) as u32)
         .sum()
 }
 
