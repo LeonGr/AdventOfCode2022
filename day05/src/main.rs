@@ -53,9 +53,7 @@ fn parse(input: &[String]) -> (State, Vec<Move>) {
             break;
         }
 
-        let line = &input[i];
-
-        let parts: Vec<usize> = line
+        let parts: Vec<usize> = input[i]
             .split(' ')
             .filter(|&word| word.chars().all(|c| c.is_numeric()))
             .map(|x| x.to_string().parse().unwrap())
@@ -73,41 +71,38 @@ fn parse(input: &[String]) -> (State, Vec<Move>) {
     (state, moves)
 }
 
-fn get_top_crates(state: &State) -> String {
-    let mut output = String::new();
-    for stack in state {
-        if !stack.is_empty() {
-            output += &stack[0].to_string();
-        }
-    }
-
-    output
+fn get_top_crates(state: &mut State) -> String {
+    state
+        .iter_mut()
+        .filter(|stack| !stack.is_empty())
+        .map(|stack| stack.pop_front().unwrap())
+        .collect()
 }
 
 fn part1(input: (State, &Vec<Move>)) -> String {
     let (mut state, moves) = input;
 
-    for mv in moves {
-        for _ in 0..mv.quantity {
+    moves.iter().for_each(|mv| {
+        (0..mv.quantity).for_each(|_| {
             let c: Crate = state[mv.source].pop_front().unwrap();
             state[mv.target].push_front(c);
-        }
-    }
+        })
+    });
 
-    get_top_crates(&state)
+    get_top_crates(&mut state)
 }
 
 fn part2(input: (State, &Vec<Move>)) -> String {
     let (mut state, moves) = input;
 
-    for mv in moves {
+    moves.iter().for_each(|mv| {
         let removed: Vec<char> = state[mv.source].drain(0..mv.quantity).collect();
-        for c in removed.iter().rev() {
+        removed.iter().rev().for_each(|c| {
             state[mv.target].push_front(*c);
-        }
-    }
+        });
+    });
 
-    get_top_crates(&state)
+    get_top_crates(&mut state)
 }
 
 fn main() -> std::io::Result<()> {
