@@ -29,7 +29,7 @@ fn part1(input: &[String]) -> u32 {
             for i in 0..left.len() {
                 let l = left_chars.get(i).unwrap();
 
-                if let Some(_) = right.chars().position(|c| c == *l) {
+                if right.chars().any(|c| c == *l) {
                     priority = get_priority(l)
                 };
             }
