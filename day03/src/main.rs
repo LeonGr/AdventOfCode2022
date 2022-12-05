@@ -23,42 +23,31 @@ fn part1(input: &[String]) -> u32 {
         .iter()
         .map(|line| {
             let (left, right) = line.split_at(line.len() / 2);
-            let left_chars: Vec<char> = left.chars().collect();
 
-            let mut priority = 0;
-            for i in 0..left.len() {
-                let l = left_chars.get(i).unwrap();
-
-                if right.chars().any(|c| c == *l) {
-                    priority = get_priority(l)
-                };
-            }
-
-            priority
+            left.chars().fold(0, |acc, l| {
+                if right.chars().any(|c| c == l) {
+                    get_priority(&l)
+                } else {
+                    acc
+                }
+            })
         })
         .sum()
 }
 
 fn part2(input: &[String]) -> u32 {
-    let mut total = 0;
-
-    for i in (0..input.len()).step_by(3) {
-        let first: Vec<char> = input.get(i).unwrap().chars().collect();
-
-        for j in 0..first.len() {
-            let l = first.get(j).unwrap();
-
+    input.chunks(3).fold(0, |acc, strings| {
+        acc + strings.get(0).unwrap().chars().fold(0, |acc, l| {
             if let (Some(_), Some(_)) = (
-                input.get(i + 1).unwrap().chars().position(|c| c == *l),
-                input.get(i + 2).unwrap().chars().position(|c| c == *l),
+                strings.get(1).unwrap().chars().position(|c| c == l),
+                strings.get(2).unwrap().chars().position(|c| c == l),
             ) {
-                total += get_priority(l);
-                break;
-            };
-        }
-    }
-
-    total
+                get_priority(&l)
+            } else {
+                acc
+            }
+        })
+    })
 }
 
 fn main() -> std::io::Result<()> {
