@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 fn read_input() -> String {
     let input = include_str!("../input");
     input.to_string()
@@ -12,7 +10,7 @@ fn find_start_of_message_marker(input: &str, distinct: usize) -> usize {
         .windows(distinct)
         .enumerate()
         .filter_map(|(index, window)| {
-            if window.iter().collect::<HashSet<&char>>().len() == distinct {
+            if std::collections::HashSet::<&char>::from_iter(window.iter()).len() == distinct {
                 Some(index)
             } else {
                 None
