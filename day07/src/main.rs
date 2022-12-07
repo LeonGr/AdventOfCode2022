@@ -3,7 +3,7 @@ fn read_input() -> Vec<String> {
     input.to_string().lines().map(|s| s.to_string()).collect()
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Directory {
     directories: Vec<Directory>,
     files_size: usize,
@@ -15,55 +15,76 @@ impl Directory {
     }
 }
 
-fn get_dirs(input: &[String]) -> Vec<Directory> {
-    let mut stack: Vec<Directory> = vec![];
-    let mut directories = vec![];
+enum Command {
+    Into,
+    Up,
+    Ls(usize),
+}
+
+fn parse(input: &[String]) -> Vec<Command> {
+    let mut commands = vec![];
 
     let mut i = 0;
     while i < input.len() {
         let line = &input[i];
 
-        if line.starts_with('$') {
-            if line.contains("cd") {
-                if line.contains("..") {
-                    let last = stack.pop().unwrap();
-                    let parent: &mut Directory = stack.last_mut().unwrap();
-                    parent.directories.push(last.clone());
-                    directories.push(last);
-                } else {
-                    let dir = Directory {
-                        directories: vec![],
-                        files_size: 0,
-                    };
-
-                    stack.push(dir);
-                }
+        if line.contains("cd") {
+            if line.contains("..") {
+                commands.push(Command::Up);
             } else {
-                let mut dir_file_size = 0;
+                commands.push(Command::Into);
+            }
+        } else {
+            let mut dir_file_size = 0;
 
-                let mut j = i + 1;
-                while j < input.len() {
-                    let ls_line = &input[j];
+            let mut j = i + 1;
+            while j < input.len() {
+                let ls_line = &input[j];
 
-                    if ls_line.starts_with('$') {
-                        break;
-                    }
-
-                    if !ls_line.starts_with("dir") {
-                        dir_file_size += ls_line.split_once(' ').unwrap().0.parse::<usize>().unwrap();
-                    }
-
-                    j += 1;
+                if ls_line.starts_with('$') {
+                    break;
                 }
 
-                stack.last_mut().unwrap().files_size += dir_file_size;
+                if !ls_line.starts_with("dir") {
+                    dir_file_size += ls_line.split_once(' ').unwrap().0.parse::<usize>().unwrap();
+                }
 
-                i = j - 1;
+                j += 1;
             }
+
+            commands.push(Command::Ls(dir_file_size));
+
+            i = j - 1;
         }
 
         i += 1;
     }
+
+    commands
+}
+
+fn get_dirs(input: &[Command]) -> Vec<Directory> {
+    let mut stack: Vec<Directory> = vec![];
+    let mut directories = vec![];
+
+    input.iter().for_each(|command| match command {
+        Command::Into => {
+            let dir = Directory {
+                directories: vec![],
+                files_size: 0,
+            };
+
+            stack.push(dir);
+        }
+        Command::Up => {
+            let last = stack.pop().unwrap();
+            stack.last_mut().unwrap().directories.push(last.clone());
+            directories.push(last);
+        }
+        Command::Ls(size) => {
+            stack.last_mut().unwrap().files_size += size;
+        }
+    });
 
     while stack.len() > 1 {
         let last = stack.pop().unwrap();
@@ -95,7 +116,8 @@ fn part2(dirs: &[Directory]) -> usize {
 
 fn main() {
     let lines = read_input();
-    let dirs = get_dirs(&lines);
+    let commands = parse(&lines);
+    let dirs = get_dirs(&commands);
 
     println!("part1: {}", part1(&dirs));
     println!("part2: {}", part2(&dirs));
