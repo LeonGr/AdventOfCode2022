@@ -19,43 +19,18 @@ fn cartesian_product(x: Range<usize>, y: Range<usize>) -> Vec<(usize, usize)> {
         .concat()
 }
 
-fn is_visible(position: (usize, usize), grid: &Vec<Vec<u8>>) -> bool {
-    let (i, j) = position;
+fn is_visible((i, j): (usize, usize), grid: &Vec<Vec<u8>>) -> bool {
     let height = grid[i][j];
 
-    if i == 0 || j == 0  || i == grid.len() - 1 || j == grid.len() - 1 {
-        return true;
-    }
-
-    let mut visible1 = true;
-    for x in 0..j {
-        if grid[i][x] >= height {
-            visible1 = false;
-        }
-    }
-
-    let mut visible2 = true;
-    for x in (j + 1)..grid[0].len() {
-        if grid[i][x] >= height {
-            visible2 = false;
-        }
-    }
-
-    let mut visible3 = true;
-    for y in 0..i {
-        if grid[y][j] >= height {
-            visible3 = false;
-        }
-    }
-
-    let mut visible4 = true;
-    for y in (i + 1)..grid.len() {
-        if grid[y][j] >= height {
-            visible4 = false;
-        }
-    }
-
-    visible1 || visible2 || visible3 || visible4
+    i == 0 || j == 0  || i == grid.len() - 1 || j == grid.len() - 1 ||
+    (0..j)
+        .all(|x| grid[i][x] < height) ||
+    ((j + 1)..grid[0].len())
+        .all(|x| grid[i][x] < height) ||
+    (0..i)
+        .all(|y| grid[y][j] < height) ||
+    ((i + 1)..grid.len())
+        .all(|y| grid[y][j] < height)
 }
 
 fn part1(grid: &Vec<Vec<u8>>) -> usize {
@@ -65,41 +40,25 @@ fn part1(grid: &Vec<Vec<u8>>) -> usize {
         .count()
 }
 
-fn scenic_score(position: (usize, usize), grid: &Vec<Vec<u8>>) -> usize {
-    let (i, j) = position;
+fn scenic_score((i, j): (usize, usize), grid: &Vec<Vec<u8>>) -> usize {
+    fn score<R: Iterator<Item = usize>>(range: R, predicate: &dyn Fn(usize) -> bool) -> usize {
+        let mut score = 0;
+        for y in range {
+            score += 1;
+            if predicate(y) {
+                break;
+            }
+        }
+
+        score
+    }
+
     let height = grid[i][j];
 
-    let mut score1 = 0;
-    for x in (0..j).rev() {
-        score1 += 1;
-        if grid[i][x] >= height {
-            break
-        }
-    }
-
-    let mut score2 = 0;
-    for x in (j + 1)..grid[0].len() {
-        score2 += 1;
-        if grid[i][x] >= height {
-            break
-        }
-    }
-
-    let mut score3 = 0;
-    for y in (0..i).rev() {
-        score3 += 1;
-        if grid[y][j] >= height {
-            break
-        }
-    }
-
-    let mut score4 = 0;
-    for y in (i + 1)..grid.len() {
-        score4 += 1;
-        if grid[y][j] >= height {
-            break
-        }
-    }
+    let score1 = score((0..j).rev(), &|x| grid[i][x] >= height);
+    let score2 = score((j + 1)..grid[0].len(), &|x| grid[i][x] >= height);
+    let score3 = score((0..i).rev(), &|y| grid[y][j] >= height);
+    let score4 = score((i + 1)..grid.len(), &|y| grid[y][j] >= height);
 
     score1 * score2 * score3 * score4
 }
