@@ -55,12 +55,10 @@ fn scenic_score((i, j): (usize, usize), grid: &Vec<Vec<u8>>) -> usize {
 
     let height = grid[i][j];
 
-    let score1 = score((0..j).rev(), &|x| grid[i][x] >= height);
-    let score2 = score((j + 1)..grid[0].len(), &|x| grid[i][x] >= height);
-    let score3 = score((0..i).rev(), &|y| grid[y][j] >= height);
-    let score4 = score((i + 1)..grid.len(), &|y| grid[y][j] >= height);
-
-    score1 * score2 * score3 * score4
+    score((0..j).rev(), &|x| grid[i][x] >= height) *
+    score((j + 1)..grid[0].len(), &|x| grid[i][x] >= height) *
+    score((0..i).rev(), &|y| grid[y][j] >= height) *
+    score((i + 1)..grid.len(), &|y| grid[y][j] >= height)
 }
 
 fn part2(grid: &Vec<Vec<u8>>) -> usize {
