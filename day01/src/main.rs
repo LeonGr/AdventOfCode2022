@@ -12,7 +12,7 @@ fn read_input_lines() -> std::io::Result<Vec<String>> {
 
 fn parse(input: &[String]) -> Vec<Vec<u32>> {
     input
-        .split(|line| line.is_empty())
+        .split(std::string::String::is_empty)
         .map(|elf| elf.iter().map(|calories| calories.parse().unwrap()).collect())
         .collect()
 }
@@ -24,7 +24,7 @@ fn part1(input: &[Vec<u32>]) -> u32 {
 fn part2(input: &[Vec<u32>]) -> u32 {
     let mut elves: Vec<u32> = input.iter().map(|elf| elf.iter().sum()).collect();
 
-    elves.sort();
+    elves.sort_unstable();
     elves.reverse();
 
     elves.iter().take(3).sum()
