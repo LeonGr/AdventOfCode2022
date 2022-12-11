@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 fn read_input() -> Vec<String> {
     let input = include_str!("../input");
-    input.to_string().lines().map(|s| s.to_string()).collect()
+    input.to_string().lines().map(std::string::ToString::to_string).collect()
 }
 
 #[derive(Clone, Copy, Debug)]
