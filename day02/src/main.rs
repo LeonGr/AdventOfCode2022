@@ -51,7 +51,7 @@ const LOST: u8 = 0;
 const DRAW: u8 = 3;
 const WON: u8 = 6;
 
-fn score(game: &Match) -> u8 {
+fn score(game: Match) -> u8 {
     match game {
         (Shape::Rock, me) => match me {
             Shape::Rock => DRAW + ROCK,
@@ -74,11 +74,11 @@ fn score(game: &Match) -> u8 {
 fn part1(input: &[(Shape, String)]) -> u32 {
     input
         .iter()
-        .map(|(opponent_shape, me)| score(&(*opponent_shape, me.parse().unwrap())) as u32)
+        .map(|(opponent_shape, me)| u32::from(score((*opponent_shape, me.parse().unwrap()))))
         .sum()
 }
 
-fn lose(shape: &Shape) -> Shape {
+fn lose(shape: Shape) -> Shape {
     match shape {
         Shape::Rock => Shape::Scissors,
         Shape::Paper => Shape::Rock,
@@ -86,7 +86,7 @@ fn lose(shape: &Shape) -> Shape {
     }
 }
 
-fn win(shape: &Shape) -> Shape {
+fn win(shape: Shape) -> Shape {
     match shape {
         Shape::Rock => Shape::Paper,
         Shape::Paper => Shape::Scissors,
@@ -94,8 +94,8 @@ fn win(shape: &Shape) -> Shape {
     }
 }
 
-fn draw(shape: &Shape) -> Shape {
-    *shape
+fn draw(shape: Shape) -> Shape {
+    shape
 }
 
 fn part2(input: &[(Shape, String)]) -> u32 {
@@ -103,13 +103,13 @@ fn part2(input: &[(Shape, String)]) -> u32 {
         .iter()
         .map(|(opponent_shape, me)| {
             let my_shape = match me.as_str() {
-                "X" => lose(opponent_shape),
-                "Y" => draw(opponent_shape),
-                "Z" => win(opponent_shape),
+                "X" => lose(*opponent_shape),
+                "Y" => draw(*opponent_shape),
+                "Z" => win(*opponent_shape),
                 _ => unreachable!(),
             };
 
-            score(&(*opponent_shape, my_shape)) as u32
+            u32::from(score((*opponent_shape, my_shape)))
         })
         .sum()
 }
