@@ -10,8 +10,8 @@ fn read_input_lines() -> std::io::Result<Vec<String>> {
         .collect())
 }
 
-fn get_priority(a: &char) -> u32 {
-    match *a as u32 {
+fn get_priority(a: char) -> u32 {
+    match a as u32 {
         a if a <= ('Z' as u32) => a - ('A' as u32) + 27,
         a if a >= ('a' as u32) => a - ('a' as u32) + 1,
         _ => unreachable!(),
@@ -26,7 +26,7 @@ fn part1(input: &[String]) -> u32 {
 
             left.chars().fold(0, |acc, l| {
                 if right.chars().any(|c| c == l) {
-                    get_priority(&l)
+                    get_priority(l)
                 } else {
                     acc
                 }
@@ -42,7 +42,7 @@ fn part2(input: &[String]) -> u32 {
                 strings.get(1).unwrap().chars().position(|c| c == l),
                 strings.get(2).unwrap().chars().position(|c| c == l),
             ) {
-                get_priority(&l)
+                get_priority(l)
             } else {
                 acc
             }
