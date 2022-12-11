@@ -1,22 +1,17 @@
-use std::collections::HashMap;
-
 fn read_input() -> String {
     let input = include_str!("../input");
     input.to_string()
 }
 
-type Item = u64;
-
 struct Monkey {
-    items: Vec<Item>,
-    operation: Box<dyn Fn(Item) -> Item>,
-    test: Box<dyn Fn(Item) -> bool>,
-    result: HashMap<bool, usize>,
+    items: Vec<u64>,
+    operation: Box<dyn Fn(u64) -> u64>,
+    new_monkey: Box<dyn Fn(u64) -> usize>,
     inspected: usize,
-    divisible_by: Item,
+    divisible_by: u64,
 }
 
-fn parse_starting_items(input: &str) -> Vec<Item> {
+fn parse_starting_items(input: &str) -> Vec<u64> {
     input
         .split_once(": ")
         .unwrap()
@@ -26,45 +21,41 @@ fn parse_starting_items(input: &str) -> Vec<Item> {
         .collect()
 }
 
-fn parse_operation(input: &str) -> Box<dyn Fn(Item) -> Item> {
-    let rhs = input.split_once("Operation: new = ").unwrap().1;
+fn parse_operation(input: &str) -> Box<dyn Fn(u64) -> u64> {
+    let second_number = input.split(' ').last().unwrap().parse::<u64>().ok();
+    let multiply = input.contains('*');
 
-    if let Some((_, r)) = rhs.split_once(" * ") {
-        if let Ok(n) = r.parse::<Item>() {
-            let operation = move |item: Item| item * n;
+    let operation = move |item| {
+        let second = match second_number {
+            Some(n) => n,
+            None => item,
+        };
 
-            Box::new(operation)
+        if multiply {
+            item * second
         } else {
-            let operation = |item: Item| item * item;
-
-            Box::new(operation)
+            item + second
         }
-    } else if let Some((_, r)) = rhs.split_once(" + ") {
-        if let Ok(n) = r.parse::<Item>() {
-            let operation = move |item: Item| item + n;
+    };
 
-            Box::new(operation)
-        } else {
-            let operation = |item: Item| item + item;
-
-            Box::new(operation)
-        }
-    } else {
-        unreachable!();
-    }
+    Box::new(operation)
 }
 
-fn parse_test(input: &str) -> (Box<dyn Fn(Item) -> bool>, Item) {
-    let divisible_by: Item = input
-        .split_once("Test: divisible by ")
-        .unwrap()
-        .1
-        .parse()
-        .unwrap();
+fn parse_new_monkey_fn(
+    test_str: &str,
+    true_str: &str,
+    false_str: &str,
+) -> (Box<dyn Fn(u64) -> usize>, u64) {
+    let divisible_by = test_str.split(' ').last().unwrap().parse().unwrap();
 
-    let test = move |item: Item| item % divisible_by == 0;
+    let new_monkey_nums: Vec<usize> = vec![true_str, false_str]
+        .iter()
+        .map(|&result| result.trim().split(' ').last().unwrap().parse().unwrap())
+        .collect();
 
-    (Box::new(test), divisible_by)
+    let new_monkey = move |item| new_monkey_nums[usize::from(item % divisible_by != 0)];
+
+    (Box::new(new_monkey), divisible_by)
 }
 
 fn parse(input: &str) -> Vec<Monkey> {
@@ -75,28 +66,13 @@ fn parse(input: &str) -> Vec<Monkey> {
             let parts: Vec<&str> = monkey_text.split("\n  ").collect();
 
             let items = parse_starting_items(parts[1]);
-            let operation: Box<dyn Fn(Item) -> Item> = parse_operation(parts[2]);
-            let (test, divisible_by): (Box<dyn Fn(Item) -> bool>, Item) = parse_test(parts[3]);
-            let result: HashMap<bool, usize> = vec![parts[4], parts[5]]
-                .iter()
-                .map(|&result| {
-                    if let Some((_, monkey)) = result.split_once("  If true: throw to monkey ") {
-                        (true, monkey.trim().parse().unwrap())
-                    } else if let Some((_, monkey)) =
-                        result.split_once("  If false: throw to monkey ")
-                    {
-                        (false, monkey.trim().parse().unwrap())
-                    } else {
-                        unreachable!()
-                    }
-                })
-                .collect();
+            let operation = parse_operation(parts[2]);
+            let (new_monkey, divisible_by) = parse_new_monkey_fn(parts[3], parts[4], parts[5]);
 
             Monkey {
                 items,
                 operation,
-                test,
-                result,
+                new_monkey,
                 inspected: 0,
                 divisible_by,
             }
@@ -104,17 +80,16 @@ fn parse(input: &str) -> Vec<Monkey> {
         .collect()
 }
 
-fn monkey_throws(monkey: &mut Monkey, divide_by: Item, limit: Item) -> Vec<(usize, Item)> {
+fn monkey_throws(monkey: &mut Monkey, divide_by: u64, limit: u64) -> Vec<(usize, u64)> {
     let throws = monkey
         .items
         .iter()
         .map(|item| {
             let new_value = ((monkey.operation)(*item) / divide_by) % limit;
-            let test_result = (monkey.test)(new_value);
-            let new_monkey = monkey.result.get(&test_result).unwrap();
+            let new_monkey = (monkey.new_monkey)(new_value);
 
             monkey.inspected += 1;
-            (*new_monkey, new_value)
+            (new_monkey, new_value)
         })
         .collect();
 
@@ -123,14 +98,14 @@ fn monkey_throws(monkey: &mut Monkey, divide_by: Item, limit: Item) -> Vec<(usiz
     throws
 }
 
-fn monkeys_catch(monkeys: &mut [Monkey], throws: &[(usize, Item)]) {
-    throws.iter().for_each(|(num_monkey, item)| {
+fn monkeys_catch(monkeys: &mut [Monkey], throws: &[(usize, u64)]) {
+    for (num_monkey, item) in throws.iter() {
         let monkey = &mut monkeys[*num_monkey];
         monkey.items.push(*item);
-    });
+    }
 }
 
-fn top_inspected_product(monkeys: &mut Vec<Monkey>, rounds: usize, divide_by: Item) -> usize {
+fn top_inspected_product(monkeys: &mut Vec<Monkey>, rounds: usize, divide_by: u64) -> usize {
     let limit = monkeys.iter().map(|monkey| monkey.divisible_by).product();
 
     (0..rounds).for_each(|_| {
@@ -144,7 +119,7 @@ fn top_inspected_product(monkeys: &mut Vec<Monkey>, rounds: usize, divide_by: It
 
     let mut inspected: Vec<usize> = monkeys.iter().map(|monkey| monkey.inspected).collect();
 
-    inspected.sort();
+    inspected.sort_unstable();
     inspected.reverse();
     inspected.iter().take(2).product()
 }
