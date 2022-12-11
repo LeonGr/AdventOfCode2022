@@ -8,7 +8,7 @@ fn find_start_of_message_marker(input: &str, distinct: usize) -> usize {
         .chars()
         .collect::<Vec<char>>()
         .windows(distinct)
-        .position(|window| std::collections::HashSet::<&char>::from_iter(window.iter()).len() == distinct)
+        .position(|window| window.iter().collect::<std::collections::HashSet<&char>>().len() == distinct)
         .unwrap()
         + distinct
 }
