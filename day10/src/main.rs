@@ -1,6 +1,10 @@
 fn read_input() -> Vec<String> {
     let input = include_str!("../input");
-    input.to_string().lines().map(|s| s.to_string()).collect()
+    input
+        .to_string()
+        .lines()
+        .map(std::string::ToString::to_string)
+        .collect()
 }
 
 enum Operation {
@@ -27,7 +31,7 @@ fn get_values_x(operations: &[Operation]) -> Vec<i32> {
                 Operation::Add(increment) => {
                     values_x.push(x);
                     values_x.push(x);
-                    x += *increment as i32;
+                    x += i32::from(*increment);
                 }
             }
 
@@ -49,9 +53,10 @@ fn part2(values_x: &[i32]) -> String {
         .enumerate()
         .fold(String::new(), |mut output, (i, x)| {
             let index = (i % 40) as i32;
-            output += match x - 1 <= index && index <= x + 1 {
-                true => "#",
-                false => " ",
+            output += if x - 1 <= index && index <= x + 1 {
+                "#"
+            } else {
+                " "
             };
 
             if (i + 1) % 40 == 0 {
