@@ -1,6 +1,6 @@
 fn read_input() -> Vec<String> {
     let input = include_str!("../input");
-    input.to_string().lines().map(|s| s.to_string()).collect()
+    input.to_string().lines().map(std::string::ToString::to_string).collect()
 }
 
 #[derive(Clone)]
@@ -11,7 +11,7 @@ struct Directory {
 
 impl Directory {
     fn size(&self) -> usize {
-        self.files_size + self.directories.iter().map(|dir| dir.size()).sum::<usize>()
+        self.files_size + self.directories.iter().map(Directory::size).sum::<usize>()
     }
 }
 
