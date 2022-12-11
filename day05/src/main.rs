@@ -55,7 +55,7 @@ fn parse(input: &[String]) -> (State, Vec<Move>) {
 
         let parts: Vec<usize> = input[i]
             .split(' ')
-            .filter(|&word| word.chars().all(|c| c.is_numeric()))
+            .filter(|&word| word.chars().all(char::is_numeric))
             .map(|x| x.to_string().parse().unwrap())
             .collect();
 
@@ -82,12 +82,12 @@ fn get_top_crates(state: &mut State) -> String {
 fn part1(input: (State, &Vec<Move>)) -> String {
     let (mut state, moves) = input;
 
-    moves.iter().for_each(|mv| {
+    for mv in moves.iter() {
         (0..mv.quantity).for_each(|_| {
             let c: Crate = state[mv.source].pop_front().unwrap();
             state[mv.target].push_front(c);
-        })
-    });
+        });
+    }
 
     get_top_crates(&mut state)
 }
@@ -95,12 +95,12 @@ fn part1(input: (State, &Vec<Move>)) -> String {
 fn part2(input: (State, &Vec<Move>)) -> String {
     let (mut state, moves) = input;
 
-    moves.iter().for_each(|mv| {
+    for mv in moves.iter() {
         let removed: Vec<char> = state[mv.source].drain(0..mv.quantity).collect();
         removed.iter().rev().for_each(|c| {
             state[mv.target].push_front(*c);
         });
-    });
+    }
 
     get_top_crates(&mut state)
 }
