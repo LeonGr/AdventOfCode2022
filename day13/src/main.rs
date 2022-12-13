@@ -49,7 +49,6 @@ impl Ord for Packet {
                 _ => unreachable!(),
             },
         }
-
     }
 }
 
@@ -116,12 +115,11 @@ fn part1(pairs: &[Pair]) -> usize {
     pairs
         .iter()
         .enumerate()
-        .filter(|(_, (first, second))| match first.cmp(second) {
-            Ordering::Less => true,
+        .filter_map(|(i, (first, second))| match first.cmp(second) {
+            Ordering::Less => Some(i + 1),
             Ordering::Equal => unreachable!(),
-            Ordering::Greater => false,
+            Ordering::Greater => None,
         })
-        .map(|(i, _)| i + 1)
         .sum()
 }
 
@@ -131,11 +129,12 @@ fn part2(pairs: &[Pair]) -> usize {
         .flat_map(|(left, right)| vec![left.clone(), right.clone()])
         .collect();
 
-    let first_divider = Packet::List(vec![Packet::List(vec![Packet::Item(2)])]);
-    let second_divider = Packet::List(vec![Packet::List(vec![Packet::Item(6)])]);
+    let dividers: Vec<_> = [2u8, 6u8]
+        .into_iter()
+        .map(|d| Packet::List(vec![Packet::List(vec![Packet::Item(d)])]))
+        .collect();
 
-    packets.push(first_divider.clone());
-    packets.push(second_divider.clone());
+    packets.append(&mut dividers.clone());
 
     packets.sort();
 
@@ -143,7 +142,7 @@ fn part2(pairs: &[Pair]) -> usize {
         .iter()
         .enumerate()
         .filter_map(|(i, packet)| {
-            if *packet == first_divider || *packet == second_divider {
+            if dividers.contains(packet) {
                 Some(i + 1)
             } else {
                 None
@@ -154,8 +153,8 @@ fn part2(pairs: &[Pair]) -> usize {
 
 fn main() {
     let input = read_input();
-    let parsed = parse(&input);
+    let packet_pairs = parse(&input);
 
-    println!("part1: {}", part1(&parsed));
-    println!("part2: {}", part2(&parsed));
+    println!("part1: {}", part1(&packet_pairs));
+    println!("part2: {}", part2(&packet_pairs));
 }
