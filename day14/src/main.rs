@@ -1,66 +1,46 @@
-use std::fmt::Debug;
+use std::collections::HashMap;
 
 fn read_input() -> Vec<String> {
     let input = include_str!("../input");
     input.to_string().lines().map(std::string::ToString::to_string).collect()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy)]
 enum Cell {
     Sand,
     Air,
     Rock
 }
 
-type Coord = usize;
+type Coord = i32;
 
 #[derive(Clone)]
 struct Grid {
-    cells: Vec<Vec<Cell>>,
+    cells: HashMap<(Coord, Coord), Cell>,
     x_min: Coord,
     x_max: Coord,
     y_min: Coord,
     y_max: Coord,
-}
-
-impl ToString for Grid {
-    fn to_string(&self) -> String {
-        let cells = &self.cells;
-        let mut output = String::new();
-
-        for row in cells.iter() {
-            for cell in row.iter() {
-                output +=
-                    match cell {
-                        Cell::Sand => "o",
-                        Cell::Air => ".",
-                        Cell::Rock => "#",
-                    }
-            }
-
-            output += "\n";
-        }
-
-        output
-    }
+    floor: bool,
 }
 
 impl Grid {
-    fn to_relative(&self, x: Coord, y: Coord) -> (Coord, Coord) {
-        (x - self.x_min, y - self.y_min)
-    }
-
-    fn to_absolute(&self, x: Coord, y: Coord) -> (Coord, Coord) {
-        (x + self.x_min, y + self.y_min)
-    }
-
     fn get_cell(&self, x: Coord, y: Coord) -> Option<Cell> {
-        let (tx, ty) = self.to_absolute(x, y);
-
-        if tx < self.x_min || tx > self.x_max || ty < self.y_min || ty > self.y_max {
-            None
-        } else {
-            Some(self.cells[y][x].clone())
+        match self.cells.get(&(x, y)) {
+            Some(cell) => Some(*cell),
+            None => {
+                if !self.floor {
+                    if x < self.x_min || x > self.x_max || y < self.y_min || y > self.y_max {
+                        None
+                    } else {
+                        Some(Cell::Air)
+                    }
+                } else if y == self.y_max + 2 {
+                    Some(Cell::Rock)
+                } else {
+                    Some(Cell::Air)
+                }
+            },
         }
     }
 }
@@ -71,7 +51,6 @@ fn parse(lines: &[String]) -> Grid {
         .map(|line| {
             line.split(" -> ")
                 .map(|segment| {
-                    // println!("segment: '{}'", segment);
                     let (x, y) = segment.split_once(',').unwrap();
                     (x.parse().unwrap(), y.parse().unwrap())
                 })
@@ -95,21 +74,13 @@ fn parse(lines: &[String]) -> Grid {
                 (x_min, x_max, y_min, y_max)
             });
 
-    println!("{:?}", end_points);
-
     let (x_min, x_max, y_min, y_max) = end_points;
-    let dx = (x_max - x_min + 1) as usize;
-    let dy = (y_max - y_min + 2) as usize;
 
-    let mut cells = vec![vec![Cell::Air; dx]; dy];
+    let mut cells = HashMap::new();
 
     for path in &paths {
             path.windows(2)
                 .for_each(|segment| {
-                    assert!(segment.len() == 2);
-
-                    println!("{:?}", segment);
-
                     let first = segment[0];
                     let second = segment[1];
                     let sx = Coord::min(first.0, second.0);
@@ -119,76 +90,122 @@ fn parse(lines: &[String]) -> Grid {
 
                     if sx == ex {
                         let x = sx;
-                        println!("x's equal, x: {}", (x - x_min) as usize);
                         (sy..=ey).for_each(|y| {
-                            println!("y: {}", y);
-                            cells[(y - y_min) as usize][(x - x_min) as usize] = Cell::Rock;
+                            // cells.insert(((x - x_min), (y - y_min)), Cell::Rock);
+                            cells.insert((x, y), Cell::Rock);
                         });
                     } else if sy == ey {
                         let y = sy;
-                        println!("y's equal, y: {}", (y - y_min) as usize);
                         (sx..=ex).for_each(|x| {
-                            println!("x: {}", x);
-                            cells[(y - y_min) as usize][(x - x_min) as usize] = Cell::Rock;
+                            // cells.insert(((x - x_min), (y - y_min)), Cell::Rock);
+                            cells.insert((x, y), Cell::Rock);
                         });
-                    } else {
-                        unreachable!()
                     }
                 });
         }
 
-    Grid { cells, x_min, x_max, y_min, y_max }
+    Grid { cells, x_min, x_max, y_min, y_max, floor: false }
 }
 
-fn move_sand(grid: &mut Grid, coords: (Coord, Coord)) -> (Coord, Coord) {
+enum MoveResult {
+    Moved((Coord, Coord)),
+    Stopped,
+    Full,
+    Abyss,
+}
+
+fn move_sand(grid: &mut Grid, coords: (Coord, Coord)) -> MoveResult {
     let (sand_x, sand_y) = (coords.0 as i32, coords.1 as i32);
 
-    println!("{:?}", coords);
+    let displacements = [(sand_x, sand_y + 1), (sand_x - 1, sand_y + 1), (sand_x + 1, sand_y + 1)];
 
-    let displacements = vec![(sand_x, sand_y + 1), (sand_x - 1, sand_y + 1), (sand_x + 1, sand_y + 1)];
+    // for (x, y) in displacements {
+        // if !grid.floor && (x < 0 || y < 0) {
+            // return MoveResult::Abyss;
+        // }
+
+        // if let Some(cell) = grid.get_cell(x, y) {
+            // match cell {
+                // Cell::Air => {
+                    // grid.cells.remove(&(sand_x, sand_y));
+                    // grid.cells.insert((x, y), Cell::Sand);
+                    // return MoveResult::Moved((x, y));
+                // },
+                // Cell::Sand | Cell::Rock => continue,
+            // }
+        // }
+
+        // if grid.floor {
+            // if coords == (500, 0) {
+                // return MoveResult::Full;
+            // }
+
+            // return MoveResult::Stopped;
+        // }
+
+        // return MoveResult::Abyss;
+    // }
+
+    // MoveResult::Stopped
+
+    if grid.floor {
+        for (x, y) in displacements {
+            if let Some(cell) = grid.get_cell(x, y) {
+                match cell {
+                    Cell::Air => {
+                        grid.cells.remove(&(sand_x, sand_y));
+                        grid.cells.insert((x, y), Cell::Sand);
+                        return MoveResult::Moved((x, y));
+                    },
+                    Cell::Sand | Cell::Rock => continue,
+                }
+            }
+        }
+
+        if coords == (500, 0) {
+            return MoveResult::Full;
+        }
+
+        return MoveResult::Stopped;
+    }
 
     for (x, y) in displacements {
         if x < 0 || y < 0 {
-            return (Coord::MAX, Coord::MAX);
+            return MoveResult::Abyss;
         }
-
-        let x = x as usize;
-        let y = y as usize;
 
         if let Some(cell) = grid.get_cell(x, y) {
             match cell {
                 Cell::Air => {
-                    grid.cells[sand_y as usize][sand_x as usize] = Cell::Air;
-                    grid.cells[y][x] = Cell::Sand;
-                    return (x, y);
+                    grid.cells.remove(&(sand_x, sand_y));
+                    grid.cells.insert((x, y), Cell::Sand);
+                    return MoveResult::Moved((x, y));
                 },
                 Cell::Sand | Cell::Rock => continue,
             }
-        } else {
-            return (Coord::MAX, Coord::MAX);
         }
+
+        return MoveResult::Abyss;
     }
 
-    coords
+    MoveResult::Stopped
 }
 
 fn add_sand(grid: &mut Grid) -> bool {
-    let mut sand_pos = grid.to_relative(500, 0);
-    grid.cells[sand_pos.1][sand_pos.0] = Cell::Sand;
+    let sand_start_pos = (500, 0);
+    grid.cells.insert(sand_start_pos, Cell::Sand);
+
+    let mut sand_pos = sand_start_pos;
 
     loop {
-        let new_sand_pos = move_sand(grid, sand_pos);
-        if new_sand_pos == (Coord::MAX, Coord::MAX) {
-            return false;
+        match move_sand(grid, sand_pos) {
+            MoveResult::Moved(pos) => sand_pos = pos,
+            MoveResult::Stopped => break,
+            MoveResult::Full | MoveResult::Abyss => return false,
         }
-        if new_sand_pos == sand_pos {
-            break;
-        }
-
-        sand_pos = new_sand_pos;
     }
 
-    return true;
+    true
 }
 
 fn part1(grid: &Grid) -> usize {
@@ -197,11 +214,21 @@ fn part1(grid: &Grid) -> usize {
     let mut i = 0;
     while add_sand(&mut grid) {
         i += 1;
-        println!("i: {}\n{}", i, grid.to_string());
     }
 
-
     i
+}
+
+fn part2(grid: &Grid) -> usize {
+    let mut grid = grid.clone();
+    grid.floor = true;
+
+    let mut i = 0;
+    while add_sand(&mut grid) {
+        i += 1;
+    }
+
+    i + 1
 }
 
 fn main() {
@@ -209,5 +236,5 @@ fn main() {
     let grid = parse(&lines);
 
     println!("part1: {}", part1(&grid));
-    // println!("part2: {}", part2(&parsed));
+    println!("part2: {}", part2(&grid));
 }
