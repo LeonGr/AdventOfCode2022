@@ -10,51 +10,23 @@ use nom::{
 };
 
 fn read_input() -> Vec<String> {
-    let input = include_str!("../input");
-    input
-        .lines()
-        .map(std::string::ToString::to_string)
-        .collect()
+    include_str!("../input").lines().map(std::string::ToString::to_string).collect()
 }
 
 fn parse(lines: &[String]) -> (Grid, Vec<Instruction>) {
-    let mut i = 0;
-    let mut cells = vec![];
-
-    loop {
-        let line = &lines[i];
-        i += 1;
-
-        if line.is_empty() {
-            break;
-        }
-
-        let mut row = vec![];
-
-        for c in line.chars() {
-            let cell = match c {
+    let cells = lines.iter().take(lines.len() - 2).map(|line| {
+        line.chars().map(|c| {
+            match c {
                 '.' => Some(Cell::Tile),
                 '#' => Some(Cell::Wall),
-                ' ' => None,
-                _ => unreachable!(),
-            };
+                _ => None,
+            }
+        })
+        .collect()
+    })
+    .collect();
 
-            row.push(cell);
-        }
-
-        cells.push(row);
-    }
-
-    let instruction_line = &lines[i];
-
-    let instructions = match instructions(instruction_line) {
-        Ok((_, instructions)) => instructions,
-        Err(_) => unreachable!(),
-    };
-
-    let grid = Grid { cells };
-
-    (grid, instructions)
+    (Grid { cells }, parse_instructions(lines.last().unwrap()).unwrap().1)
 }
 
 fn turn(i: &str) -> IResult<&str, Rotation> {
@@ -69,10 +41,8 @@ fn turn(i: &str) -> IResult<&str, Rotation> {
     Ok((matched, rotation))
 }
 
-fn instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
-    use Instruction::{Move, Turn};
-
-    many0(alt((map(turn, Turn), map(u8, Move))))(input)
+fn parse_instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
+    many0(alt((map(turn, Instruction::Turn), map(u8, Instruction::Move))))(input)
 }
 
 #[derive(Clone, Copy)]
@@ -305,6 +275,7 @@ fn part1((grid, instructions): &(Grid, Vec<Instruction>)) -> usize {
             }
         }
     }
+
     1000 * (position.1 + 1) + 4 * (position.0 + 1) + direction.to_digit()
 }
 
@@ -318,7 +289,6 @@ enum Face {
 }
 
 impl Face {
-    // checked
     fn get_new_direction(&self, direction: &Direction) -> Direction {
         match self {
             Face::One | Face::Four => match direction {
@@ -438,9 +408,7 @@ fn get_face((x, y): Pos) -> Option<Face> {
         Some(Face::One)
     } else if (TWO_START_X..=TWO_END_X).contains(&x) && (TWO_START_Y..=TWO_END_Y).contains(&y) {
         Some(Face::Two)
-    } else if (THREE_START_X..=THREE_END_X).contains(&x)
-        && (THREE_START_Y..=THREE_END_Y).contains(&y)
-    {
+    } else if (THREE_START_X..=THREE_END_X).contains(&x) && (THREE_START_Y..=THREE_END_Y).contains(&y) {
         Some(Face::Three)
     } else if (FOUR_START_X..=FOUR_END_X).contains(&x) && (FOUR_START_Y..=FOUR_END_Y).contains(&y) {
         Some(Face::Four)
@@ -466,9 +434,7 @@ fn part2((grid, instructions): &(Grid, Vec<Instruction>)) -> usize {
         }
     }
 
-    let (final_column, final_row) = (position.0 + 1, position.1 + 1);
-
-    1000 * final_row + 4 * final_column + direction.to_digit()
+    1000 * (position.1 + 1) + 4 * (position.0 + 1) + direction.to_digit()
 }
 
 fn main() {
