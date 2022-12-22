@@ -45,10 +45,7 @@ fn parse(lines: &[String]) -> (Grid, Vec<Instruction>) {
         cells.push(row);
     }
 
-    // cells.reverse();
-
     let instruction_line = &lines[i];
-    // println!("{}", instruction_line);
 
     let instructions = match instructions(instruction_line) {
         Ok((_, instructions)) => instructions,
@@ -78,19 +75,17 @@ fn instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
     many0(alt((map(turn, Turn), map(u8, Move))))(input)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum Cell {
     Wall,
     Tile,
 }
 
-#[derive(Debug)]
 enum Rotation {
     Clockwise,
     Counterclockwise,
 }
 
-#[derive(Debug)]
 enum Direction {
     Right,
     Down,
@@ -139,7 +134,6 @@ impl Direction {
 
 type Distance = u8;
 
-#[derive(Debug)]
 enum Instruction {
     Turn(Rotation),
     Move(Distance),
@@ -277,32 +271,17 @@ impl Grid {
                     }
                 }
             } else {
-                println!("changing face");
                 let face = get_face(current_position).unwrap();
-                println!("current_face: {:?}", face);
-                println!("going in direction: {:?}", direction);
-
-                let (new_face, new_direction) = face.get_new_face_and_direction(direction);
-                println!("new_face should be: {:?}", new_face);
-
+                let new_direction = face.get_new_direction(direction);
                 let new_position = face.get_new_position((nx, ny));
-                println!("new_face calculated: {:?}", get_face(new_position).unwrap());
-
-                assert_eq!(get_face(new_position).unwrap(), new_face);
-
-                println!("new_position: {:?}", new_position);
-                println!("new_direction {:?}", new_direction);
 
                 match self.get_cell((new_position.0 as i32, new_position.1 as i32)) {
-                    Some(cell) => {
-                        match cell {
-                            Cell::Wall => return current_position,
-                            Cell::Tile => {
-                                *direction = new_direction;
-                                (dx, dy) = direction.get_displacement();
-                                current_position = new_position;
-                            }
-,
+                    Some(cell) => match cell {
+                        Cell::Wall => return current_position,
+                        Cell::Tile => {
+                            *direction = new_direction;
+                            (dx, dy) = direction.get_displacement();
+                            current_position = new_position;
                         }
                     },
                     None => unreachable!(),
@@ -329,7 +308,6 @@ fn part1((grid, instructions): &(Grid, Vec<Instruction>)) -> usize {
     1000 * (position.1 + 1) + 4 * (position.0 + 1) + direction.to_digit()
 }
 
-#[derive(Debug, PartialEq)]
 enum Face {
     One,
     Two,
@@ -341,220 +319,88 @@ enum Face {
 
 impl Face {
     // checked
-    fn get_new_face_and_direction(&self, direction: &Direction) -> (Face, Direction) {
+    fn get_new_direction(&self, direction: &Direction) -> Direction {
         match self {
-            Face::One => match direction {
-                Direction::Right => (Face::Two, Direction::Right),
-                Direction::Down => (Face::Three, Direction::Down),
-                Direction::Left => (Face::Four, Direction::Right),
-                Direction::Up => (Face::Six, Direction::Right),
+            Face::One | Face::Four => match direction {
+                Direction::Down => Direction::Down,
+                Direction::Left | Direction::Up | Direction::Right => Direction::Right,
             },
-            Face::Two => match direction {
-                Direction::Right => (Face::Five, Direction::Left),
-                Direction::Down => (Face::Three, Direction::Left),
-                Direction::Left => (Face::One, Direction::Left),
-                Direction::Up => (Face::Six, Direction::Up),
+            Face::Two | Face::Five => match direction {
+                Direction::Up => Direction::Up,
+                Direction::Right | Direction::Down | Direction::Left => Direction::Left,
             },
-            Face::Three => match direction {
-                Direction::Right => (Face::Two, Direction::Up),
-                Direction::Down => (Face::Five, Direction::Down),
-                Direction::Left => (Face::Four, Direction::Down),
-                Direction::Up => (Face::One, Direction::Up),
-            },
-            Face::Four => match direction {
-                Direction::Right => (Face::Five, Direction::Right),
-                Direction::Down => (Face::Six, Direction::Down),
-                Direction::Left => (Face::One, Direction::Right),
-                Direction::Up => (Face::Three, Direction::Right),
-            },
-            Face::Five => match direction {
-                Direction::Right => (Face::Two, Direction::Left),
-                Direction::Down => (Face::Six, Direction::Left),
-                Direction::Left => (Face::Four, Direction::Left),
-                Direction::Up => (Face::Three, Direction::Up),
-            },
-            Face::Six => match direction {
-                Direction::Right => (Face::Five, Direction::Up),
-                Direction::Down => (Face::Two, Direction::Down),
-                Direction::Left => (Face::One, Direction::Down),
-                Direction::Up => (Face::Four, Direction::Up),
+            Face::Three | Face::Six => match direction {
+                Direction::Down | Direction::Left => Direction::Down,
+                Direction::Up | Direction::Right => Direction::Up,
             },
         }
     }
 
-    // fn get_new_face_and_direction(&self, direction: &Direction) -> (Face, Direction) {
-        // match self {
-            // Face::One => match direction {
-                // Direction::Right => (Face::Six, Direction::Left),
-                // Direction::Down => (Face::Four, Direction::Down),
-                // Direction::Left => (Face::Three, Direction::Down),
-                // Direction::Up => (Face::Two, Direction::Down),
-            // },
-            // Face::Two => match direction {
-                // Direction::Right => (Face::Three, Direction::Right),
-                // Direction::Down => (Face::Five, Direction::Up),
-                // Direction::Left => (Face::Six, Direction::Up),
-                // Direction::Up => (Face::One, Direction::Down),
-            // },
-            // Face::Three => match direction {
-                // Direction::Right => (Face::Four, Direction::Right),
-                // Direction::Down => (Face::Five, Direction::Right),
-                // Direction::Left => (Face::Two, Direction::Left),
-                // Direction::Up => (Face::One, Direction::Right),
-            // },
-            // Face::Four => match direction {
-                // Direction::Right => (Face::Six, Direction::Down),
-                // Direction::Down => (Face::Five, Direction::Down),
-                // Direction::Left => (Face::Three, Direction::Left),
-                // Direction::Up => (Face::One, Direction::Up),
-            // },
-            // Face::Five => match direction {
-                // Direction::Right => (Face::Six, Direction::Right),
-                // Direction::Down => (Face::Two, Direction::Up),
-                // Direction::Left => (Face::Three, Direction::Up),
-                // Direction::Up => (Face::Four, Direction::Up),
-            // },
-            // Face::Six => match direction {
-                // Direction::Right => (Face::One, Direction::Left),
-                // Direction::Down => (Face::Two, Direction::Right),
-                // Direction::Left => (Face::Five, Direction::Left),
-                // Direction::Up => (Face::Four, Direction::Left),
-            // },
-        // }
-    // }
-
     fn get_new_position(&self, (x, y): (i32, i32)) -> Pos {
-        let new_pos =
-            match self {
-                Face::One => {
-                    if y < ONE_START_Y {
-                        (SIX_START_X, (x - ONE_START_X) + SIX_START_Y)
-                    } else if x < ONE_START_X {
-                        (FOUR_START_X, FOUR_END_Y - (y - ONE_START_Y))
-                    } else {
-                        unreachable!()
-                    }
-                },
-                Face::Two => {
-                    if y < TWO_START_Y {
-                        ((x - TWO_START_X) + SIX_START_X, SIX_END_Y)
-                    } else if x > TWO_END_X {
-                        (FIVE_END_X, FIVE_END_Y - (y - TWO_START_Y))
-                    } else if y > TWO_END_Y {
-                        (THREE_END_X, (x - TWO_START_X) + THREE_START_Y)
-                    } else {
-                        unreachable!()
-                    }
-                },
-                Face::Three => {
-                    if x < THREE_START_X {
-                        ((y - THREE_START_Y) + FOUR_START_X, FOUR_START_Y)
-                    } else if x > THREE_END_X {
-                        ((y - THREE_START_Y) + TWO_START_X, TWO_END_Y)
-                    } else {
-                        unreachable!()
-                    }
-                },
-                Face::Four => {
-                    if x < FOUR_START_X {
-                        (ONE_START_X, ONE_END_Y - (y - FOUR_START_Y))
-                    } else if y < FOUR_START_Y {
-                        (THREE_START_X, (x - FOUR_START_X) + THREE_START_Y)
-                    } else {
-                        unreachable!()
-                    }
-                },
-                Face::Five => {
-                    if x > FIVE_END_X {
-                        (TWO_END_X, TWO_END_Y - (y - FIVE_START_Y))
-                    } else if y > FIVE_END_Y {
-                        (SIX_END_X, (x - FIVE_START_X) + SIX_START_Y)
-                    } else {
-                        unreachable!()
-                    }
-                },
-                Face::Six => {
-                    if x < SIX_START_X {
-                        ((y - SIX_START_Y) + ONE_START_X, ONE_START_Y)
-                    } else if x > SIX_END_X {
-                        ((y - SIX_START_Y) + FIVE_START_X, FIVE_END_Y)
-                    } else if y > SIX_END_Y {
-                        ((x - SIX_START_X) + TWO_START_X, TWO_START_Y)
-                    } else {
-                        unreachable!()
-                    }
-                },
-            };
+        let new_pos = match self {
+            Face::One => {
+                if y < ONE_START_Y {
+                    (SIX_START_X, (x - ONE_START_X) + SIX_START_Y)
+                } else if x < ONE_START_X {
+                    (FOUR_START_X, FOUR_END_Y - (y - ONE_START_Y))
+                } else {
+                    unreachable!()
+                }
+            }
+            Face::Two => {
+                if y < TWO_START_Y {
+                    ((x - TWO_START_X) + SIX_START_X, SIX_END_Y)
+                } else if x > TWO_END_X {
+                    (FIVE_END_X, FIVE_END_Y - (y - TWO_START_Y))
+                } else if y > TWO_END_Y {
+                    (THREE_END_X, (x - TWO_START_X) + THREE_START_Y)
+                } else {
+                    unreachable!()
+                }
+            }
+            Face::Three => {
+                if x < THREE_START_X {
+                    ((y - THREE_START_Y) + FOUR_START_X, FOUR_START_Y)
+                } else if x > THREE_END_X {
+                    ((y - THREE_START_Y) + TWO_START_X, TWO_END_Y)
+                } else {
+                    unreachable!()
+                }
+            }
+            Face::Four => {
+                if x < FOUR_START_X {
+                    (ONE_START_X, ONE_END_Y - (y - FOUR_START_Y))
+                } else if y < FOUR_START_Y {
+                    (THREE_START_X, (x - FOUR_START_X) + THREE_START_Y)
+                } else {
+                    unreachable!()
+                }
+            }
+            Face::Five => {
+                if x > FIVE_END_X {
+                    (TWO_END_X, TWO_END_Y - (y - FIVE_START_Y))
+                } else if y > FIVE_END_Y {
+                    (SIX_END_X, (x - FIVE_START_X) + SIX_START_Y)
+                } else {
+                    unreachable!()
+                }
+            }
+            Face::Six => {
+                if x < SIX_START_X {
+                    ((y - SIX_START_Y) + ONE_START_X, ONE_START_Y)
+                } else if x > SIX_END_X {
+                    ((y - SIX_START_Y) + FIVE_START_X, FIVE_END_Y)
+                } else if y > SIX_END_Y {
+                    ((x - SIX_START_X) + TWO_START_X, TWO_START_Y)
+                } else {
+                    unreachable!()
+                }
+            }
+        };
         (new_pos.0 as usize, new_pos.1 as usize)
     }
-
-    // fn get_new_position(&self, (x, y): (i32, i32)) -> Pos {
-        // let new_pos =
-            // match self {
-                // Face::One => {
-                    // if x < ONE_START_X {
-                        // ((y - ONE_START_Y) + THREE_START_X, THREE_START_Y)
-                    // } else if x > ONE_END_X {
-                        // (SIX_END_X, SIX_END_Y - (y - ONE_START_Y))
-                    // } else if y < ONE_START_Y {
-                        // (TWO_END_X - (x - ONE_START_X), TWO_START_Y)
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-                // Face::Two => {
-                    // if x < TWO_START_X {
-                        // (SIX_END_X - (y - TWO_START_Y), SIX_END_Y)
-                    // } else if y < TWO_START_Y {
-                        // (ONE_END_X - (x - TWO_START_X), ONE_START_Y)
-                    // } else if y > TWO_END_Y {
-                        // (FIVE_END_X - (x - TWO_START_X), FIVE_END_Y)
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-                // Face::Three => {
-                    // if y < THREE_START_Y {
-                        // (ONE_START_X, (x - THREE_START_X) + ONE_START_Y)
-                    // } else if y > THREE_END_Y {
-                        // (FIVE_START_X, FIVE_END_Y - (x - THREE_START_X))
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-                // Face::Four => {
-                    // if x > FOUR_END_X {
-                        // (SIX_END_X - (y - FOUR_START_Y), SIX_START_Y)
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-                // Face::Five => {
-                    // if x < FIVE_START_X {
-                        // (TWO_END_X - (y - FIVE_START_Y), THREE_END_Y)
-                    // } else if y > FIVE_END_Y {
-                        // (TWO_END_X - (x - FIVE_START_X), TWO_END_Y)
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-                // Face::Six => {
-                    // if x > SIX_END_X {
-                        // (ONE_END_X, ONE_END_Y - (y - SIX_START_Y))
-                    // } else if y < SIX_START_Y {
-                        // (FOUR_END_X, FOUR_END_Y - (x - SIX_START_X))
-                    // } else if y > SIX_END_Y {
-                        // (TWO_START_X, TWO_END_Y - (x - SIX_START_X))
-                    // } else {
-                        // unreachable!()
-                    // }
-                // },
-            // };
-        // (new_pos.0 as usize, new_pos.1 as usize)
-    // }
 }
 
-// checked
 const ONE_START_X: i32 = 50;
 const ONE_END_X: i32 = 99;
 const ONE_START_Y: i32 = 0;
@@ -585,36 +431,6 @@ const SIX_END_X: i32 = 49;
 const SIX_START_Y: i32 = 150;
 const SIX_END_Y: i32 = 199;
 
-// const ONE_START_X: i32 = 8;
-// const ONE_END_X: i32 = 11;
-// const ONE_START_Y: i32 = 0;
-// const ONE_END_Y: i32 = 3;
-
-// const TWO_START_X: i32 = 0;
-// const TWO_END_X: i32 = 3;
-// const TWO_START_Y: i32 = 4;
-// const TWO_END_Y: i32 = 7;
-
-// const THREE_START_X: i32 = 4;
-// const THREE_END_X: i32 = 7;
-// const THREE_START_Y: i32 = 4;
-// const THREE_END_Y: i32 = 7;
-
-// const FOUR_START_X: i32 = 8;
-// const FOUR_END_X: i32 = 11;
-// const FOUR_START_Y: i32 = 4;
-// const FOUR_END_Y: i32 = 7;
-
-// const FIVE_START_X: i32 = 8;
-// const FIVE_END_X: i32 = 11;
-// const FIVE_START_Y: i32 = 8;
-// const FIVE_END_Y: i32 = 11;
-
-// const SIX_START_X: i32 = 12;
-// const SIX_END_X: i32 = 15;
-// const SIX_START_Y: i32 = 8;
-// const SIX_END_Y: i32 = 11;
-
 fn get_face((x, y): Pos) -> Option<Face> {
     let (x, y) = (x as i32, y as i32);
 
@@ -622,7 +438,9 @@ fn get_face((x, y): Pos) -> Option<Face> {
         Some(Face::One)
     } else if (TWO_START_X..=TWO_END_X).contains(&x) && (TWO_START_Y..=TWO_END_Y).contains(&y) {
         Some(Face::Two)
-    } else if (THREE_START_X..=THREE_END_X).contains(&x) && (THREE_START_Y..=THREE_END_Y).contains(&y) {
+    } else if (THREE_START_X..=THREE_END_X).contains(&x)
+        && (THREE_START_Y..=THREE_END_Y).contains(&y)
+    {
         Some(Face::Three)
     } else if (FOUR_START_X..=FOUR_END_X).contains(&x) && (FOUR_START_Y..=FOUR_END_Y).contains(&y) {
         Some(Face::Four)
@@ -640,20 +458,13 @@ fn part2((grid, instructions): &(Grid, Vec<Instruction>)) -> usize {
     let mut direction = Direction::Right;
 
     for instruction in instructions {
-        println!("current_position: {:?}", position);
-        println!("current_direction: {:?}", direction);
-        println!("processing instruction: {:?}", instruction);
-
         match instruction {
             Instruction::Turn(rotation) => direction = direction.turn(rotation),
             Instruction::Move(distance) => {
                 position = grid.do_move2(position, &mut direction, *distance);
             }
         }
-        println!();
     }
-
-    println!("final position: {:?}", position);
 
     let (final_column, final_row) = (position.0 + 1, position.1 + 1);
 
