@@ -65,11 +65,10 @@ fn elf_dance(elves: &HashSet<Pos>, rounds: Option<Rounds>) -> (HashSet<Pos>, Rou
         Direction::East,
     ]);
 
+    let mut proposed: HashMap<Pos, Vec<Pos>> = HashMap::new();
     let mut rounds_done = 0;
     loop {
         rounds_done += 1;
-
-        let mut proposed: HashMap<Pos, Vec<Pos>> = HashMap::new();
 
         for elf in &elves_copy {
             if count_free_neightbours(&elves_copy, *elf) != 8 {
@@ -116,10 +115,10 @@ fn elf_dance(elves: &HashSet<Pos>, rounds: Option<Rounds>) -> (HashSet<Pos>, Rou
 
 
         let mut any_moves = false;
-        for (pos, elves_proposed) in proposed {
+        for (pos, elves_proposed) in &proposed {
             if elves_proposed.len() == 1 {
                 elves_copy.remove(&elves_proposed[0]);
-                elves_copy.insert(pos);
+                elves_copy.insert(*pos);
                 any_moves = true;
             }
         }
@@ -133,6 +132,7 @@ fn elf_dance(elves: &HashSet<Pos>, rounds: Option<Rounds>) -> (HashSet<Pos>, Rou
         }
 
         directions_considered.rotate_left(1);
+        proposed.clear();
     }
 
     (elves_copy, rounds_done)
