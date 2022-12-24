@@ -43,7 +43,7 @@ fn parse(lines: &[String]) -> Valley {
 type Coord = i32;
 type Pos = (Coord, Coord);
 
-#[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
+#[derive(Default, Clone)]
 struct Cell(usize, usize, usize, usize);
 
 impl Cell {
@@ -63,7 +63,7 @@ impl Cell {
     }
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Clone)]
 struct Valley {
     fields: Vec<Vec<Cell>>,
     width: usize,
