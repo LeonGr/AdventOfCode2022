@@ -14,38 +14,36 @@ fn read_input() -> Vec<String> {
 }
 
 fn parse(lines: &[String]) -> Valley {
-    let fields: Vec<Vec<Cell>> =
-        lines
-            .iter()
-            .skip(1)
-            .take(lines.len() - 2)
-            .map(|line| {
-                line.chars()
-                    .skip(1)
-                    .take_while(|c| *c != '#')
-                    .map(move |c| {
-                        match c {
-                            '^' => Cell(1, 0, 0, 0),
-                            '>' => Cell(0, 1, 0, 0),
-                            'v' => Cell(0, 0, 1, 0),
-                            '<' => Cell(0, 0, 0, 1),
-                            _ => Cell::default(),
-                        }
-                    })
-                    .collect()
-            })
-            .collect();
+    let fields: Vec<Vec<Cell>> = lines
+        .iter()
+        .skip(1)
+        .take(lines.len() - 2)
+        .map(|line| {
+            line.chars()
+                .skip(1)
+                .take_while(|c| *c != '#')
+                .map(move |c| match c {
+                    '^' => Cell(1, 0, 0, 0),
+                    '>' => Cell(0, 1, 0, 0),
+                    'v' => Cell(0, 0, 1, 0),
+                    '<' => Cell(0, 0, 0, 1),
+                    _ => Cell::default(),
+                })
+                .collect()
+        })
+        .collect();
 
     let width = fields.first().unwrap().len();
     let height = fields.len();
-    Valley { fields, width, height, position: (0, -1) }
+    let position = (0, -1);
+
+    Valley { fields, width, height, position }
 }
 
 type Coord = i32;
 type Pos = (Coord, Coord);
 
-#[derive(Debug, Default, Clone)]
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
 struct Cell(usize, usize, usize, usize);
 
 impl Cell {
@@ -65,8 +63,7 @@ impl Cell {
     }
 }
 
-#[derive(Debug, Clone)]
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 struct Valley {
     fields: Vec<Vec<Cell>>,
     width: usize,
@@ -74,46 +71,8 @@ struct Valley {
     position: Pos,
 }
 
-impl ToString for Valley {
-    fn to_string(&self) -> String {
-        let top_botton: String = vec!["#".to_string(); self.width + 2].into_iter().collect();
-        let mut output = String::new();
-        output += top_botton.as_str();
-        output += "\n";
-
-        for row in &self.fields {
-            output += "#";
-
-            for cell in row {
-                output +=
-                    match cell.desctructure() {
-                        (0, 0, 0, 0) => ".".to_string(),
-                        (1, 0, 0, 0) => "^".to_string(),
-                        (0, 1, 0, 0) => ">".to_string(),
-                        (0, 0, 1, 0) => "v".to_string(),
-                        (0, 0, 0, 1) => "<".to_string(),
-                        _ => {
-                            let sum = cell.sum();
-                            if sum > 9 {
-                                "+".to_string()
-                            } else {
-                                sum.to_string()
-                            }
-                        }
-                    }.as_str();
-            }
-
-            output += "#\n";
-        }
-
-        output += top_botton.as_str();
-
-        output
-    }
-}
-
 impl Valley {
-    fn updated_fields(&self) -> Vec<Vec<Cell>>  {
+    fn updated_fields(&self) -> Vec<Vec<Cell>> {
         let mut new = vec![vec![Cell::default(); self.width]; self.height];
 
         for (y, row) in &mut self.fields.iter().enumerate() {
@@ -145,49 +104,36 @@ impl Valley {
 
         let updated_fields = self.updated_fields();
 
-        displacements.iter().filter_map(|(dx, dy)| {
-            let new @ (nx, ny) = (x + dx, y + dy);
+        displacements
+            .iter()
+            .filter_map(|(dx, dy)| {
+                let new @ (nx, ny) = (x + dx, y + dy);
 
-            // start
-            if new == (0, -1) {
-                return Some(new);
-            }
+                if new == (0, -1) || new == (self.width as i32 - 1, self.height as i32) {
+                    return Some(new);
+                }
 
-            // end
-            if new == (self.width as i32 - 1, self.height as i32) {
-                return Some(new);
-            }
+                if nx < 0 || ny < 0 || nx >= self.width as i32 || ny >= self.height as i32 {
+                    return None;
+                }
 
-            // outside map (but not start or end)
-            if nx < 0 || ny < 0 || nx >= self.width as i32 || ny >= self.height as i32 {
-                return None;
-            }
-
-            let field = &updated_fields[ny as usize][nx as usize];
-
-            if field.sum() == 0 {
-                Some(new)
-            } else {
-                None
-            }
-        }).collect()
+                if updated_fields[ny as usize][nx as usize].sum() == 0 {
+                    Some(new)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 
 type Time = usize;
 
 fn part1(valley: &Valley) -> usize {
-    let valley = valley.clone();
-    // println!("{:?}", valley);
-
-    // println!("{}\n", valley.to_string());
-    // println!("possible moves: {:?}", valley.possible_moves());
-
     let target = (valley.width as i32 - 1, valley.height as i32);
 
     let mut seen: HashSet<(Pos, Time)> = HashSet::new();
-    let mut queue = VecDeque::from([(valley, 0)]);
-    // let mut depths: HashMap<Valley, usize> = HashMap::from([(valley, 0)]);
+    let mut queue = VecDeque::from([(valley.clone(), 0)]);
 
     while !queue.is_empty() {
         let (last, time) = queue.pop_front().unwrap();
@@ -195,9 +141,7 @@ fn part1(valley: &Valley) -> usize {
             return time;
         }
 
-        let possible_moves = last.possible_moves();
-
-        for possible_move in possible_moves {
+        for possible_move in last.possible_moves() {
             let mut clone = last.clone();
             clone.update();
             clone.position = possible_move;
@@ -215,20 +159,15 @@ fn part1(valley: &Valley) -> usize {
 }
 
 fn part2(valley: &Valley) -> usize {
-    let valley = valley.clone();
-    // println!("{:?}", valley);
-
-    // println!("{}\n", valley.to_string());
-    // println!("possible moves: {:?}", valley.possible_moves());
-
     let start = (0, -1);
     let end = (valley.width as i32 - 1, valley.height as i32);
 
     let mut seen: HashSet<(Pos, Time)> = HashSet::new();
-    let mut queue = VecDeque::from([(valley, 0)]);
+    let mut queue = VecDeque::from([(valley.clone(), 0)]);
 
     let target = end;
 
+    // this is getting out of hand, now there are 3 of them
     while !queue.is_empty() {
         let (last, time) = queue.pop_front().unwrap();
         if last.position == target {
@@ -238,9 +177,7 @@ fn part2(valley: &Valley) -> usize {
             break;
         }
 
-        let possible_moves = last.possible_moves();
-
-        for possible_move in possible_moves {
+        for possible_move in last.possible_moves() {
             let mut clone = last.clone();
             clone.update();
             clone.position = possible_move;
@@ -265,9 +202,7 @@ fn part2(valley: &Valley) -> usize {
             break;
         }
 
-        let possible_moves = last.possible_moves();
-
-        for possible_move in possible_moves {
+        for possible_move in last.possible_moves() {
             let mut clone = last.clone();
             clone.update();
             clone.position = possible_move;
@@ -289,9 +224,7 @@ fn part2(valley: &Valley) -> usize {
             return time;
         }
 
-        let possible_moves = last.possible_moves();
-
-        for possible_move in possible_moves {
+        for possible_move in last.possible_moves() {
             let mut clone = last.clone();
             clone.update();
             clone.position = possible_move;
